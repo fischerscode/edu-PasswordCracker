@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:password_cracker/controller/pin/bruteforce/layout/settings.dart';
+import 'package:password_cracker/controller/pin/bruteforce/strategy.dart';
+import 'package:password_cracker/widgets/option_selection.dart';
 import 'package:provider/provider.dart';
 
 import '../controller.dart';
-import 'runner.dart';
+import 'runner/runner.dart';
+import 'speed.dart';
 
 class BruteForceController with ChangeNotifier {
   BruteForceRunner? _runner;
@@ -12,7 +15,8 @@ class BruteForceController with ChangeNotifier {
     pinController.addListener(stop);
   }
 
-  bool get isRunning => _runner != null && !_runner!.finished;
+  bool get isRunning =>
+      _runner != null && _runner!.state == RunnerState.running;
 
   BruteForceSpeed delayLevel = BruteForceSpeed.medium;
 
@@ -26,9 +30,8 @@ class BruteForceController with ChangeNotifier {
   }
 
   void start() {
-    _runner = BruteForceRunner(pinController);
+    _runner = bruteForceStrategy.create(pinController, delayLevel);
     _runner!.addListener(notifyListeners);
-    _runner!.start(delayLevel);
     notifyListeners();
   }
 
@@ -44,6 +47,34 @@ class BruteForceController with ChangeNotifier {
     notifyListeners();
   }
 
+  BruteForceStrategy bruteForceStrategy = BruteForceStrategy.raising;
+
+  List<Widget> buildSettings(BuildContext context) {
+    return [
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: MultiButtonSelection(
+          options: BruteForceStrategy.values
+              .map((e) => e.text)
+              .toList(growable: false),
+          selected: bruteForceStrategy.index,
+          onSelected: (value) {
+            bruteForceStrategy = BruteForceStrategy.values[value];
+            stop();
+          },
+        ),
+      ),
+      Slider(
+        value: delayLevel.index.toDouble(),
+        min: 0,
+        max: BruteForceSpeed.values.length.toDouble() - 1,
+        divisions: BruteForceSpeed.values.length - 1,
+        onChanged: (v) => onDelayLevelChange(BruteForceSpeed.values[v.toInt()]),
+        label: '$delayLevel',
+      ),
+    ];
+  }
+
   bool get pressButtons => pinController.pressButtons;
 
   void onPressButtonsChange(value) {
@@ -52,6 +83,7 @@ class BruteForceController with ChangeNotifier {
   }
 
   bool get updateUi => pinController.updateUi;
+
   void onUpdateUiChange(value) {
     pinController.updateUi = value;
     notifyListeners();
@@ -65,27 +97,4 @@ class BruteForceController with ChangeNotifier {
     stop();
     super.dispose();
   }
-}
-
-enum BruteForceSpeed {
-  extraFast("extra schnell", 1000),
-  fast("schnell", 100),
-  medium("zügig", 10),
-  slow("langsam", 1),
-  extraSlow("extra langsam", 0.2),
-  ;
-
-  final double attacksPerSecond;
-  final String text;
-  const BruteForceSpeed(this.text, this.attacksPerSecond);
-
-  Duration getPressDelay(int pinLength) {
-    return Duration(
-        microseconds:
-            (Duration.microsecondsPerSecond / attacksPerSecond / pinLength)
-                .ceil());
-  }
-
-  @override
-  String toString() => text;
 }

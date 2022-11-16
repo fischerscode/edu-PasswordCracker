@@ -15,15 +15,7 @@ class BruteForceWidget extends StatelessWidget {
       ElevatedButton(
           onPressed: !controller.isRunning ? controller.start : controller.stop,
           child: Text(controller.isRunning ? "STOP" : "START")),
-      Slider(
-        value: controller.delayLevel.index.toDouble(),
-        min: 0,
-        max: BruteForceSpeed.values.length.toDouble() - 1,
-        divisions: BruteForceSpeed.values.length - 1,
-        onChanged: (v) =>
-            controller.onDelayLevelChange(BruteForceSpeed.values[v.toInt()]),
-        label: '${controller.delayLevel}',
-      ),
+      ...controller.buildSettings(context),
       Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,

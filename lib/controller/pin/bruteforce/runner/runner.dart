@@ -3,33 +3,30 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:password_cracker/controller/pin/bruteforce/controller.dart';
 
-import '../controller.dart';
+import '../../controller.dart';
+import '../speed.dart';
 
-class BruteForceRunner with ChangeNotifier {
-  BruteForceRunner(this.inputController) {
+abstract class BruteForceRunner with ChangeNotifier {
+  BruteForceRunner(this.inputController, this.speed) {
     inputController.addListener(cancel);
+    _start();
   }
 
   final PinController inputController;
+  final BruteForceSpeed speed;
 
   int progress = 0;
   Timer? _timer;
 
-  List<int> get currentPin {
-    return List.generate(inputController.pinLength(),
-            (index) => (pinCounter % pow(10, index + 1)) ~/ pow(10, index))
-        .reversed
-        .toList();
-  }
+  List<int>? get currentPin;
 
   int get pinCounter => progress ~/ (inputController.pinLength() + 1);
   int get pinInputCounter => progress % (inputController.pinLength() + 1);
 
-  bool finished = false;
+  RunnerState state = RunnerState.running;
 
-  void start(BruteForceSpeed speed) async {
+  void _start() async {
     inputController.disableUserInput();
 
     await Future.delayed(const Duration(milliseconds: 10));
@@ -53,13 +50,19 @@ class BruteForceRunner with ChangeNotifier {
 
       while (progress < desiredProgress) {
         progress = pinCounter * (inputController.pinLength() + 1);
-        if (inputController.validatePin(currentPin)) {
+        var testPin = currentPin;
+        if (testPin == null) {
+          state = RunnerState.failed;
+          cancel();
+          return;
+        }
+        if (inputController.validatePin(testPin)) {
           clearInput();
-          for (var digit in currentPin) {
+          for (var digit in testPin) {
             inputController.addDigit(digit);
           }
           inputController.validate();
-          finished = true;
+          state = RunnerState.finished;
           cancel();
           return;
         } else {
@@ -68,11 +71,17 @@ class BruteForceRunner with ChangeNotifier {
       }
 
       if (inputController.inputLength() < inputController.pinLength()) {
-        inputController.addDigit(currentPin[inputController.inputLength()]);
+        var testPin = currentPin;
+        if (testPin == null) {
+          state = RunnerState.failed;
+          cancel();
+          return;
+        }
+        inputController.addDigit(testPin[inputController.inputLength()]);
       } else {
         if (inputController.updateUi) notifyListeners();
         if (inputController.validate()) {
-          finished = true;
+          state = RunnerState.finished;
           cancel();
           return;
         }
@@ -84,7 +93,10 @@ class BruteForceRunner with ChangeNotifier {
   bool _disposed = false;
   void cancel() {
     _timer?.cancel();
-    inputController.enableUserInput();
+    Future.delayed(const Duration(milliseconds: 50)).then((value) {
+      inputController.invalid();
+      inputController.enableUserInput();
+    });
     if (!_disposed) {
       notifyListeners();
       dispose();
@@ -97,4 +109,17 @@ class BruteForceRunner with ChangeNotifier {
     _disposed = true;
     super.dispose();
   }
+
+  static List<int> getDigitsFromNumber(int number, int length) {
+    return List.generate(
+            length, (index) => (number % pow(10, index + 1)) ~/ pow(10, index))
+        .reversed
+        .toList(growable: false);
+  }
+}
+
+enum RunnerState {
+  running,
+  finished,
+  failed;
 }

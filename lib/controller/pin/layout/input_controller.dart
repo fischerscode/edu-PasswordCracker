@@ -3,6 +3,7 @@ part of 'pin_lock_screen.dart';
 abstract class _PinInputController {
   void addDigit(int digit);
   void removeLast();
+  void invalid();
   bool validate();
   int inputLength();
   void enableUserInput();
@@ -14,8 +15,6 @@ abstract class PinInputController implements _PinInputController {
 
   bool pressButtons = true;
   bool updateUi = true;
-
-  DateTime _lastPress = DateTime(0);
 
   @override
   void addDigit(int digit) {
@@ -31,6 +30,11 @@ abstract class PinInputController implements _PinInputController {
       pressKey(_subscriber?.removeKey);
     }
     _subscriber?.removeLast(updateUi);
+  }
+
+  @override
+  void invalid() {
+    _subscriber?.invalid();
   }
 
   @override

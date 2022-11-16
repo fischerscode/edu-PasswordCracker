@@ -159,6 +159,19 @@ class _PinLockScreenState extends State<PinLockScreen>
   }
 
   @override
+  void invalid() {
+    if (mounted) {
+      setState(() {
+        input.clear();
+        isInvalid = true;
+      });
+    } else {
+      input.clear();
+      isInvalid = true;
+    }
+  }
+
+  @override
   bool validate([bool updateUi = true]) {
     if (widget.controller.validatePin(input)) {
       Navigator.of(context).push(
