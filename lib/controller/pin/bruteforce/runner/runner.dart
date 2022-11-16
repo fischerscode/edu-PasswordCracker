@@ -49,6 +49,7 @@ abstract class BruteForceRunner with ChangeNotifier {
           1;
 
       while (progress < desiredProgress) {
+        clearInput();
         progress = pinCounter * (inputController.pinLength() + 1);
         var testPin = currentPin;
         if (testPin == null) {
