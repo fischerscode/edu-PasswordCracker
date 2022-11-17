@@ -9,10 +9,11 @@ class SettingsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var controller = Provider.of<LoginController>(context);
-    return Column(
+    return Flex(
+      direction: Axis.vertical,
       children: [
-        controller.buildSettings(context),
-        const AboutButton(),
+        Expanded(child: controller.buildSettings(context)),
+        const AboutButtons(),
       ],
     );
   }
