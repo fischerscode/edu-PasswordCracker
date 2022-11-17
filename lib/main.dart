@@ -55,10 +55,13 @@ class _CrackerAppState extends State<CrackerApp> {
                         ),
                       ],
                     ),
-                    body: TabBarView(children: [
-                      const SettingsTab(),
-                      loginController.buildBruteForce(context),
-                    ]),
+                    body: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TabBarView(children: [
+                        const SettingsTab(),
+                        loginController.buildBruteForce(context),
+                      ]),
+                    ),
                   ),
                 )),
               ],
