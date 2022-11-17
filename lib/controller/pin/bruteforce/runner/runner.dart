@@ -88,6 +88,7 @@ abstract class BruteForceRunner with ChangeNotifier {
         }
       }
       progress++;
+      notifyListeners();
     });
   }
 
