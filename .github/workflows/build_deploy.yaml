@@ -1,15 +1,14 @@
-name: Build and Deploy
+name: Flutter CI
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
 jobs:
   web:
     concurrency: web-${{ github.ref }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -23,3 +22,92 @@ jobs:
         with:
           branch: gh-pages
           folder: build/web
+
+  build-and-release-linux:
+    concurrency: linux-${{ github.ref }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+      - name: Install dependencies
+        run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - name: Build 🔧
+        run: |
+          flutter pub get
+          flutter build linux
+      - name: Archive Release
+        uses: thedoctor0/zip-release@0.6.2
+        with:
+          type: "zip"
+          filename: PasswordCracker-${{github.ref_name}}-linux.zip
+          directory: build/linux/x64/release/bundle
+      - name: Linux Release 🚀
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: build/linux/x64/release/bundle/PasswordCracker-${{github.ref_name}}-linux.zip
+
+  build-and-release-windows:
+    concurrency: windows-${{ github.ref }}
+    runs-on: windows-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+      - name: Build 🔧
+        run: |
+          flutter pub get
+          flutter build windows
+          Copy-Item (vswhere -latest -find 'VC\Redist\MSVC\*\x64\*\msvcp140.dll') build/windows/runner/Release/
+          Copy-Item (vswhere -latest -find 'VC\Redist\MSVC\*\x64\*\vcruntime140.dll') build/windows/runner/Release/
+          Copy-Item (vswhere -latest -find 'VC\Redist\MSVC\*\x64\*\vcruntime140_1.dll') build/windows/runner/Release/
+      - name: Archive Release
+        uses: thedoctor0/zip-release@0.6.2
+        with:
+          type: "zip"
+          filename: PasswordCracker-${{github.ref_name}}-windows.zip
+          directory: build/windows/runner/Release
+      - name: Windows Release 🚀
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: build/windows/runner/Release/PasswordCracker-${{github.ref_name}}-windows.zip
+
+  build-and-release-macos:
+    concurrency: macos-${{ github.ref }}
+    runs-on: macos-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+      - name: Build 🔧
+        run: |
+          flutter pub get
+          flutter build macos
+      - name: Archive Release
+        uses: thedoctor0/zip-release@0.6.2
+        with:
+          type: "zip"
+          filename: PasswordCracker-${{github.ref_name}}-macos.zip
+          directory: build/macos/Build/Products/Release
+      - name: macOS Release 🚀
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: build/macos/Build/Products/Release/PasswordCracker-${{github.ref_name}}-macos.zip
