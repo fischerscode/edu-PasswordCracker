@@ -10,8 +10,8 @@ import 'package:password_cracker/controller/pin/controller.dart';
 enum BruteForceStrategy {
   raising("Steigend"),
   falling("Fallend"),
-  random("Zufall"),
   middle("Mitte"),
+  random("Zufall"),
   dictionary("Wörterbuch"),
   ;
 
